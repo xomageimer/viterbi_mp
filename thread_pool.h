@@ -17,9 +17,6 @@ class ThreadPool {
 public:
     explicit ThreadPool(size_t ThreadCount);
     ~ThreadPool();
-
-    void Reset();
-    size_t WorkersCount();
 private:
     std::mutex mut;
     std::condition_variable cv;

@@ -43,20 +43,3 @@ ThreadPool::~ThreadPool() {
     for (auto & Thread : Workers)
         Thread.join();
 }
-
-void ThreadPool::Reset() {
-    std::lock_guard lk(mut);
-    while (!Tasks.empty())
-        Tasks.pop();
-}
-
-size_t ThreadPool::WorkersCount() {
-    size_t WorkersCount = 0;
-    {
-        std::lock_guard lk(mut);
-        for (auto cur_state : IsWork)
-            WorkersCount += cur_state;
-    }
-
-    return WorkersCount;
-}

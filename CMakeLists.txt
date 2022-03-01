@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(nlohmann_json)
 
-add_executable(viterbi generate_trajectory.cpp utils.cpp correspond_trajectories.cpp thread_pool.cpp)
+add_executable(viterbi generate_trajectory.cpp utils.cpp thread_pool.cpp)
 target_link_libraries(viterbi PRIVATE nlohmann_json::nlohmann_json)
 
 set_target_properties(viterbi PROPERTIES
