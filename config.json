@@ -1,0 +1,21 @@
+{
+    "initial_position": [
+        185.5,
+        -255.5
+    ],
+    "initial_heading": 0.8,
+    "init_position_stddev": 0.7,
+    "init_heading_stddev": 0.7,
+    "motion_params": {
+        "linear": {
+            "mean": 0.0,
+            "stddev": 0.4,
+            "lower_bound": 0.0
+        },
+        "angular": {
+            "mean": 0.0,
+            "stddev": 0.05,
+            "lower_bound": 0.03
+        }
+    }
+}
