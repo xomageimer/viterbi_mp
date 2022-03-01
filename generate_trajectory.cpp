@@ -93,7 +93,6 @@ int main(int argc, char ** argv) {
                                    json_graph[0]["particles"]["heading"][i]) * static_cast<double>(json_graph[0]["particles"]["weight"][i]));
     }
 
-    ThreadPool thread_pool(std::max(static_cast<unsigned int>(2), std::thread::hardware_concurrency()));
     auto start = std::chrono::steady_clock::now();
     for (size_t step = 1; step < total_steps; step++) {
         auto data_cur = json_graph[step]["particles"];
@@ -114,47 +113,50 @@ int main(int argc, char ** argv) {
             min_size = *std::min_element(sizes.begin(), sizes.end());
         }
 
-        std::vector<std::future<void>> results;
-        for (size_t i = 0; i < min_size; i++) {
-            size_t min_size_2;
-            {
-                std::vector<size_t> sizes;
-                sizes.push_back(data_prev["x"].size());
-                sizes.push_back(data_prev["y"].size());
-                sizes.push_back(data_prev["heading"].size());
-                min_size_2 = *std::min_element(sizes.begin(), sizes.end());
-            }
-
-            results.push_back(thread_pool.AddTask([i, step, min_size_2, &prob, &prev, &data_cur, &data_prev, &delta_x, &delta_y, &delta_h, &mot_params] {
-                for (size_t j = 0; j < min_size_2; j++) {
-                    auto tran_prob = get_transition_probability(
-                            {
-                                    static_cast<double>(data_prev["x"][j]),
-                                    static_cast<double>(data_prev["y"][j]),
-                                    static_cast<double>(data_prev["heading"][j])
-                            },
-                            {
-                                    static_cast<double>(data_cur["x"][i]),
-                                    static_cast<double>(data_cur["y"][i]),
-                                    static_cast<double>(data_cur["heading"][i])
-                            },
-                            {
-                                    delta_x,
-                                    delta_y,
-                                    delta_h
-                            },
-                            mot_params
-                    );
-                    if (prob[step][i] < static_cast<double>(data_cur["weight"][i]) * tran_prob * prob[step - 1][j]) {
-                        prob[step][i] = static_cast<double>(data_cur["weight"][i]) * tran_prob
-                                        * prob[step - 1][j];
-                        prev[step][i] = j;
-                    }
+        {
+            ThreadPool thread_pool(std::max(static_cast<unsigned int>(2), std::thread::hardware_concurrency()));
+            for (size_t i = 0; i < min_size; i++) {
+                size_t min_size_2;
+                {
+                    std::vector<size_t> sizes;
+                    sizes.push_back(data_prev["x"].size());
+                    sizes.push_back(data_prev["y"].size());
+                    sizes.push_back(data_prev["heading"].size());
+                    min_size_2 = *std::min_element(sizes.begin(), sizes.end());
                 }
-            }));
+
+                thread_pool.AddTask(
+                        [i, step, min_size_2, &prob, &prev, &data_cur, &data_prev, &delta_x, &delta_y, &delta_h, &mot_params] {
+                            for (size_t j = 0; j < min_size_2; j++) {
+                                auto tran_prob = get_transition_probability(
+                                        {
+                                                static_cast<double>(data_prev["x"][j]),
+                                                static_cast<double>(data_prev["y"][j]),
+                                                static_cast<double>(data_prev["heading"][j])
+                                        },
+                                        {
+                                                static_cast<double>(data_cur["x"][i]),
+                                                static_cast<double>(data_cur["y"][i]),
+                                                static_cast<double>(data_cur["heading"][i])
+                                        },
+                                        {
+                                                delta_x,
+                                                delta_y,
+                                                delta_h
+                                        },
+                                        mot_params
+                                );
+                                if (prob[step][i] <
+                                    static_cast<double>(data_cur["weight"][i]) * tran_prob * prob[step - 1][j]) {
+                                    prob[step][i] = static_cast<double>(data_cur["weight"][i]) * tran_prob
+                                                    * prob[step - 1][j];
+                                    prev[step][i] = j;
+                                }
+                            }
+                        });
+            }
         }
-        for (auto & res : results)
-            res.get();
+
 
         double s = std::accumulate(prob[step].begin(), prob[step].end(), static_cast<double>(0));
         for (auto &x: prob[step]) {
