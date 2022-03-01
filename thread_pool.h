@@ -13,39 +13,41 @@
 #include <optional>
 #include <memory>
 
-struct ThreadPool {
+class ThreadPool {
 public:
     explicit ThreadPool(size_t ThreadCount);
     ~ThreadPool();
 
+    void Reset();
     size_t WorkersCount();
-    template <typename F, typename... Args>
-    auto AddTask(F&& f, Args&&... args) -> std::future<void> {
-        auto TaskPtr = std::make_shared<std::packaged_task<void()>>([&]{
-            f(args...);
-        });
+private:
+    std::mutex mut;
+    std::condition_variable cv;
+
+    std::vector<std::thread> Workers;
+    std::vector<bool> IsWork;
+
+    std::queue<std::function<void()>> Tasks;
+
+    std::atomic_bool Stop = false;
+
+public:
+    template<typename F, typename... Args>
+    auto AddTask(F &&f, Args &&... args) -> std::future<void> {
+        using return_type = std::future<void>;
+        auto TaskPtr = std::make_shared<std::packaged_task<void()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+
         auto ReturnFuture = TaskPtr->get_future();
+
         {
-            std::lock_guard lk (mut_);
-            tasks_.emplace([TaskPtr]{(*TaskPtr)();});
+            std::lock_guard lk(mut);
+            Tasks.emplace([TaskPtr]{(*TaskPtr)();});
         }
-        cv_.notify_one();
+
+        cv.notify_one();
 
         return ReturnFuture;
     }
-private:
-    struct worker {
-        explicit worker(std::function<void()> f) : thread(std::move(f)) {}
-
-        std::thread thread;
-        bool is_busy = false;
-    };
-    std::vector<worker> workers_;
-
-    std::mutex mut_;
-    std::condition_variable cv_;
-
-    std::queue<std::function<void()>> tasks_;
 };
 
 

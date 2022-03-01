@@ -114,6 +114,7 @@ int main(int argc, char ** argv) {
             min_size = *std::min_element(sizes.begin(), sizes.end());
         }
 
+        std::vector<std::future<void>> results;
         for (size_t i = 0; i < min_size; i++) {
             size_t min_size_2;
             {
@@ -124,8 +125,7 @@ int main(int argc, char ** argv) {
                 min_size_2 = *std::min_element(sizes.begin(), sizes.end());
             }
 
-            std::vector<std::future<void>> results;
-            results.push_back(thread_pool.AddTask([&] {
+            results.push_back(thread_pool.AddTask([i, step, min_size_2, &prob, &prev, &data_cur, &data_prev, &delta_x, &delta_y, &delta_h, &mot_params] {
                 for (size_t j = 0; j < min_size_2; j++) {
                     auto tran_prob = get_transition_probability(
                             {
@@ -152,9 +152,9 @@ int main(int argc, char ** argv) {
                     }
                 }
             }));
-            for (auto & res : results)
-                res.get();
         }
+        for (auto & res : results)
+            res.get();
 
         double s = std::accumulate(prob[step].begin(), prob[step].end(), static_cast<double>(0));
         for (auto &x: prob[step]) {
