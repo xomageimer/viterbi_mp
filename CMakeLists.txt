@@ -11,6 +11,6 @@ target_link_libraries(viterbi PRIVATE nlohmann_json::nlohmann_json)
 set_target_properties(viterbi PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED ON
-        COMPILE_OPTIONS "-Wpedantic;-Wall;-Wextra"
+        COMPILE_OPTIONS "-O3;-Wpedantic;-Wall;-Wextra"
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         )

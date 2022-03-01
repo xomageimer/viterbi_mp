@@ -157,7 +157,6 @@ int main(int argc, char ** argv) {
             }
         }
 
-
         double s = std::accumulate(prob[step].begin(), prob[step].end(), static_cast<double>(0));
         for (auto &x: prob[step]) {
             x /= s;
