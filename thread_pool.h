@@ -34,7 +34,6 @@ private:
 public:
     template<typename F, typename... Args>
     auto AddTask(F &&f, Args &&... args) -> std::future<void> {
-        using return_type = std::future<void>;
         auto TaskPtr = std::make_shared<std::packaged_task<void()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 
         auto ReturnFuture = TaskPtr->get_future();
